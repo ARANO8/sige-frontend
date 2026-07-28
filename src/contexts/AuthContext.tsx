@@ -5,6 +5,15 @@ import { useRouter } from 'next/navigation';
 import { api } from '@/src/lib/api';
 import type { Usuario, LoginData, RegisterData, AuthResponse } from '@/src/types';
 
+function setCookie(name: string, value: string, days = 7) {
+  const expires = new Date(Date.now() + days * 864e5).toUTCString();
+  document.cookie = `${name}=${value}; expires=${expires}; path=/`;
+}
+
+function removeCookie(name: string) {
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+}
+
 interface AuthContextType {
   usuario: Usuario | null;
   token: string | null;
@@ -38,6 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { access_token, usuario: user } = res.data;
     localStorage.setItem('access_token', access_token);
     localStorage.setItem('usuario', JSON.stringify(user));
+    setCookie('access_token', access_token);
     setToken(access_token);
     setUsuario(user);
     router.push('/dashboard');
@@ -48,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { access_token, usuario: user } = res.data;
     localStorage.setItem('access_token', access_token);
     localStorage.setItem('usuario', JSON.stringify(user));
+    setCookie('access_token', access_token);
     setToken(access_token);
     setUsuario(user);
     router.push('/dashboard');
@@ -56,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('usuario');
+    removeCookie('access_token');
     setToken(null);
     setUsuario(null);
     router.push('/login');
