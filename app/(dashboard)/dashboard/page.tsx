@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/src/components/ui/Card';
 import { useAuth } from '@/src/contexts/AuthContext';
 import { apiClient } from '@/src/lib/api-client';
-import { Package, Factory, ShoppingCart, ShoppingBag, AlertTriangle, TrendingUp } from 'lucide-react';
+import { Package, Factory, ShoppingCart, ShoppingBag, AlertTriangle, TrendingUp, FileDown } from 'lucide-react';
 
 export default function DashboardPage() {
   const { usuario } = useAuth();
@@ -28,6 +28,22 @@ export default function DashboardPage() {
       <div>
         <h1 className="font-headline text-2xl font-semibold text-on-surface">Dashboard Gerencial</h1>
         <p className="font-body text-sm text-on-surface-variant mt-1">Bienvenido, {usuario?.nombre}</p>
+        <div className="flex gap-2 mt-4">
+          <button
+            onClick={async () => {
+              try {
+                const res = await apiClient.reportes.exportPdf();
+                const blob = new Blob([res.data], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+              } catch {}
+            }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white font-label text-sm hover:bg-primary/90 transition-colors"
+          >
+            <FileDown className="w-4 h-4" /> Exportar PDF
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">

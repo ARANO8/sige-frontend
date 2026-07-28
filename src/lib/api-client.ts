@@ -34,7 +34,28 @@ export const apiClient = {
     list: (page = 1) => api.get(`/asiento-contable?page=${page}&limit=50`),
     create: (d: any) => api.post('/asiento-contable', d),
   },
+  cargo: {
+    list: () => api.get('/cargo'),
+    create: (d: any) => api.post('/cargo', d),
+  },
+  empleado: {
+    list: () => api.get('/empleado'),
+    create: (d: any) => api.post('/empleado', d),
+  },
+  turno: {
+    list: () => api.get('/turno'),
+    create: (d: any) => api.post('/turno', d),
+  },
+  registroHoras: {
+    list: (idEmpleado?: string) => api.get(`/registro-horas${idEmpleado ? `?idEmpleado=${idEmpleado}` : ''}`),
+    create: (d: any) => api.post('/registro-horas', d),
+  },
   reportes: {
     dashboard: () => api.get('/reportes/dashboard'),
+    exportPdf: () => api.get('/reportes/exportar-pdf', { responseType: 'blob' }),
+  },
+  cuentasContables: {
+    list: () => api.get('/cuenta-contable'),
+    create: (d: any) => api.post('/cuenta-contable', d),
   },
 };
