@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { RoleGuard } from '@/src/components/ui/RoleGuard';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
@@ -8,6 +9,14 @@ import { apiClient } from '@/src/lib/api-client';
 import { ShoppingBag } from 'lucide-react';
 
 export default function VentasPage() {
+  return (
+    <RoleGuard roles={['ADMINISTRADOR', 'RESPONSABLE_VENTAS']}>
+      <VentasContent />
+    </RoleGuard>
+  );
+}
+
+function VentasContent() {
   const [ventas, setVentas] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
   const [tab, setTab] = useState<'VENTAS' | 'CLIENTES'>('VENTAS');

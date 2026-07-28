@@ -58,4 +58,20 @@ export const apiClient = {
     list: () => api.get('/cuenta-contable'),
     create: (d: any) => api.post('/cuenta-contable', d),
   },
+  usuarios: {
+    list: () => api.get('/usuario'),
+    create: (d: any) => api.post('/usuario', d),
+    remove: (id: string) => api.delete(`/usuario/${id}`),
+  },
+  rolesAdmin: {
+    list: () => api.get('/rol'),
+    create: (d: any) => api.post('/rol', d),
+    remove: (id: string) => api.delete(`/rol/${id}`),
+  },
+  permisos: {
+    list: () => api.get('/permiso'),
+  },
+  empresaAdmin: {
+    get: () => api.get('/empresa'),
+  },
 };

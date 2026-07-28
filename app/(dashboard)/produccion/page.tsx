@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { RoleGuard } from '@/src/components/ui/RoleGuard';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
@@ -8,6 +9,14 @@ import { apiClient } from '@/src/lib/api-client';
 import { Factory, CheckCircle, XCircle, Package } from 'lucide-react';
 
 export default function ProduccionPage() {
+  return (
+    <RoleGuard roles={['ADMINISTRADOR', 'JEFE_PRODUCCION']}>
+      <ProduccionContent />
+    </RoleGuard>
+  );
+}
+
+function ProduccionContent() {
   const [ordenes, setOrdenes] = useState<any[]>([]);
   const [boms, setBoms] = useState<any[]>([]);
   const [showForm, setShowForm] = useState(false);

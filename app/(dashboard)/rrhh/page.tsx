@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { RoleGuard } from '@/src/components/ui/RoleGuard';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
@@ -10,6 +11,14 @@ import { Users, Clock, Briefcase } from 'lucide-react';
 type Tab = 'empleados' | 'turnos' | 'horas';
 
 export default function RRHHPage() {
+  return (
+    <RoleGuard roles={['ADMINISTRADOR', 'RESPONSABLE_RRHH']}>
+      <RRHHContent />
+    </RoleGuard>
+  );
+}
+
+function RRHHContent() {
   const [tab, setTab] = useState<Tab>('empleados');
   const [showForm, setShowForm] = useState(false);
   const [empleados, setEmpleados] = useState<any[]>([]);

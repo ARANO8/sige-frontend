@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { RoleGuard } from '@/src/components/ui/RoleGuard';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
@@ -8,6 +9,14 @@ import { apiClient } from '@/src/lib/api-client';
 import { ShoppingCart, CheckCircle, Truck, XCircle } from 'lucide-react';
 
 export default function ComprasPage() {
+  return (
+    <RoleGuard roles={['ADMINISTRADOR', 'RESPONSABLE_COMPRAS']}>
+      <ComprasContent />
+    </RoleGuard>
+  );
+}
+
+function ComprasContent() {
   const [ocs, setOcs] = useState<any[]>([]);
   const [proveedores, setProveedores] = useState<any[]>([]);
   const [tab, setTab] = useState<'OC' | 'PROV'>('OC');

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { RoleGuard } from '@/src/components/ui/RoleGuard';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
@@ -17,6 +18,14 @@ const tabs: { id: Tab; label: string; icon: any }[] = [
 ];
 
 export default function InventariosPage() {
+  return (
+    <RoleGuard roles={['ADMINISTRADOR', 'RESPONSABLE_INVENTARIOS', 'JEFE_PRODUCCION', 'RESPONSABLE_COMPRAS', 'RESPONSABLE_VENTAS']}>
+      <InventariosContent />
+    </RoleGuard>
+  );
+}
+
+function InventariosContent() {
   const [activeTab, setActiveTab] = useState<Tab>('materias-primas');
   const [showForm, setShowForm] = useState(false);
 

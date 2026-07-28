@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { RoleGuard } from '@/src/components/ui/RoleGuard';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
@@ -10,6 +11,14 @@ import { FileText, BookOpen, Plus } from 'lucide-react';
 type Tab = 'asientos' | 'cuentas';
 
 export default function ContabilidadPage() {
+  return (
+    <RoleGuard roles={['ADMINISTRADOR', 'CONTADOR']}>
+      <ContabilidadContent />
+    </RoleGuard>
+  );
+}
+
+function ContabilidadContent() {
   const [tab, setTab] = useState<Tab>('asientos');
   const [showForm, setShowForm] = useState(false);
   const [asientos, setAsientos] = useState<any[]>([]);
