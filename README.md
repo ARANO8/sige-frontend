@@ -1,66 +1,114 @@
-# SIGE Frontend
+# SIGE ERP — Frontend
 
-Frontend for SIGE (Sistema de Gestión Estudiantil) built with [Next.js](https://nextjs.org/) 16, React 19, and Tailwind CSS v4.
+Aplicación web del Sistema ERP SaaS Multi-tenant para Manufactura.
 
-## Tech Stack
+**Tecnologías:** Next.js 16 · React 19 · Tailwind CSS v4 · Bun
 
-- **Framework:** Next.js 16 (App Router)
-- **UI:** React 19, Tailwind CSS v4
-- **Language:** TypeScript 5
-- **Runtime:** Bun
+---
 
-## Prerequisites
+## Requisitos
 
-- [Bun](https://bun.sh/) >= 1.0
-- [Node.js](https://nodejs.org/) >= 20.19.0
+| Herramienta | Versión |
+|-------------|---------|
+| Bun         | 1.0+ |
+| Node.js     | 20.19+ |
 
-## Project setup
+---
+
+## Inicio rápido
 
 ```bash
-# 1. Clone and install dependencies
-git clone <repo-url>
+# 1. Clonar y entrar al frontend
 cd sige-frontend
+
+# 2. Instalar dependencias
 bun install
 
-# 2. Create your .env from the sample
-cp .env.sample .env
-
-# 3. Start development server
-bun run dev
+# 3. Iniciar servidor (puerto 3001)
+$env:PORT = "3001"; bun run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Importante:** El frontend usa el puerto **3001** por defecto para no conflictuar con el backend (puerto 3000).
 
-## Environment variables
+La aplicación arranca en **http://localhost:3001**.
 
-Copy `.env.sample` to `.env` and adjust as needed:
+---
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NEXT_PUBLIC_API_URL` | Backend API base URL | `http://localhost:3000` |
+## Configuración
 
-Variables prefixed with `NEXT_PUBLIC_` are exposed to the browser.
-
-## Available scripts
+El frontend se conecta automáticamente al backend en `http://localhost:3000`.
+Si el backend corre en otro puerto, configurar:
 
 ```bash
-bun run dev       # Start development server
-bun run build     # Create production build
-bun run start     # Start production server
-bun run lint      # Run ESLint
+$env:NEXT_PUBLIC_API_URL = "http://localhost:3000"
 ```
 
-## Project structure
+---
+
+## Rutas del sistema
+
+| Ruta | Módulo | Descripción |
+|------|--------|-------------|
+| `/login` | Auth | Inicio de sesión multi-tenant |
+| `/register` | Auth | Registro de nueva empresa |
+| `/dashboard` | Reportes | Dashboard gerencial con KPIs y exportación PDF |
+| `/inventarios` | Inventarios | Materias primas, productos, almacenes, movimientos |
+| `/produccion` | Producción | Órdenes de producción y listas BOM |
+| `/compras` | Compras | Órdenes de compra y proveedores |
+| `/ventas` | Ventas | Ventas, clientes y facturación |
+| `/contabilidad` | Contabilidad | Plan de cuentas y asientos contables |
+| `/rrhh` | RRHH | Empleados, turnos y registro de horas |
+
+---
+
+## Credenciales de prueba
+
+Iniciar sesión con cualquiera de estas cuentas (el backend debe estar corriendo):
+
+| Empresa | Email | Contraseña |
+|---------|-------|------------|
+| CBN (Cervecería) | admin@cbn.com | cbn123 |
+| Droguería INTI | admin@inti.com | inti123 |
+| Empakar Express | admin@empakar.com | empakar123 |
+
+---
+
+## Scripts
+
+```bash
+bun run dev       # Servidor desarrollo (hot-reload)
+bun run build     # Build producción
+bun run start     # Servidor producción
+bun run lint      # ESLint
+```
+
+---
+
+## Estructura
 
 ```
-app/
-├── layout.tsx    # Root layout (fonts, global styles)
-├── page.tsx      # Home page
-└── globals.css   # Global styles + Tailwind
+sige-frontend/
+├── app/
+│   ├── (auth)/          # Login y registro (layout público)
+│   │   ├── login/
+│   │   └── register/
+│   ├── (dashboard)/     # Módulos del sistema (layout autenticado)
+│   │   ├── dashboard/
+│   │   ├── inventarios/
+│   │   ├── produccion/
+│   │   ├── compras/
+│   │   ├── ventas/
+│   │   ├── contabilidad/
+│   │   └── rrhh/
+│   ├── layout.tsx       # Layout raíz con provider de auth
+│   ├── page.tsx         # Redirige a /login
+│   └── globals.css      # Design system (Stitch tokens)
+├── src/
+│   ├── components/ui/   # Button, Input, Card, Sidebar
+│   ├── contexts/        # AuthContext (JWT + cookies)
+│   ├── lib/             # API client, helpers
+│   ├── middleware.ts    # Protección de rutas
+│   └── types/           # Tipos TypeScript
+├── package.json
+└── tsconfig.json
 ```
-
-## Learn More
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Learn Next.js](https://nextjs.org/learn)
-- [Tailwind CSS v4](https://tailwindcss.com/)
