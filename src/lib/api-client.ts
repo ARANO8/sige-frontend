@@ -53,6 +53,13 @@ export const apiClient = {
   reportes: {
     dashboard: () => api.get('/reportes/dashboard'),
     exportPdf: () => api.get('/reportes/exportar-pdf', { responseType: 'blob' }),
+    ventasMensuales: (meses = 6) => api.get(`/reportes/ventas-mensuales?meses=${meses}`),
+    comprasMensuales: (meses = 6) => api.get(`/reportes/compras-mensuales?meses=${meses}`),
+    produccionMensual: (meses = 6) => api.get(`/reportes/produccion-mensual?meses=${meses}`),
+    topProductos: (limite = 5) => api.get(`/reportes/top-productos?limite=${limite}`),
+    distribucionInventario: () => api.get('/reportes/distribucion-inventario'),
+    kpiConfig: () => api.get('/reportes/kpi-config'),
+    updateKpiConfig: (data: any) => api.put('/reportes/kpi-config', data),
   },
   cuentasContables: {
     list: () => api.get('/cuenta-contable'),

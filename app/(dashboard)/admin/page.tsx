@@ -7,9 +7,9 @@ import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { apiClient } from '@/src/lib/api-client';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { Shield, UserPlus, Users, Building2, Trash2 } from 'lucide-react';
+import { Shield, Users, Building2, BarChart3, Trash2, Check, X } from 'lucide-react';
 
-type Tab = 'usuarios' | 'roles' | 'empresa';
+type Tab = 'usuarios' | 'roles' | 'empresa' | 'kpis';
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('usuarios');
@@ -21,13 +21,14 @@ export default function AdminPage() {
       <div className="space-y-6">
         <div>
           <h1 className="font-headline text-2xl font-semibold text-on-surface">Administración</h1>
-          <p className="font-body text-sm text-on-surface-variant mt-1">Gestión de usuarios, roles y configuración del sistema</p>
+          <p className="font-body text-sm text-on-surface-variant mt-1">Gestión de usuarios, roles, KPIs y configuración del sistema</p>
         </div>
 
-        <div className="flex gap-1 bg-surface-container rounded-xl p-1 w-fit">
+        <div className="flex gap-1 bg-surface-container rounded-xl p-1 w-fit flex-wrap">
           {[
             { id: 'usuarios' as Tab, label: 'Usuarios', icon: Users },
             { id: 'roles' as Tab, label: 'Roles', icon: Shield },
+            { id: 'kpis' as Tab, label: 'KPIs', icon: BarChart3 },
             { id: 'empresa' as Tab, label: 'Empresa', icon: Building2 },
           ].map((t) => {
             const Icon = t.icon;
@@ -42,6 +43,7 @@ export default function AdminPage() {
 
         {tab === 'usuarios' && <UsersTab showForm={showForm} onToggle={() => setShowForm(!showForm)} onClose={() => setShowForm(false)} />}
         {tab === 'roles' && <RolesTab showForm={showForm} onToggle={() => setShowForm(!showForm)} />}
+        {tab === 'kpis' && <KpisTab />}
         {tab === 'empresa' && <EmpresaTab />}
       </div>
     </RoleGuard>
@@ -191,6 +193,130 @@ function RolesTab({ showForm, onToggle }: { showForm: boolean; onToggle: () => v
           </div>
         </Card>
       )}
+    </div>
+  );
+}
+
+function KpisTab() {
+  const [config, setConfig] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  const load = async () => {
+    try { const r = await apiClient.reportes.kpiConfig(); setConfig(r.data); } catch {}
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const toggleKpi = async (key: string) => {
+    if (!config) return;
+    const updated = { ...config.kpisConfig, [key]: { ...config.kpisConfig[key], enabled: !config.kpisConfig[key]?.enabled } };
+    setSaving(true);
+    try { const r = await apiClient.reportes.updateKpiConfig({ kpisConfig: updated }); setConfig((r as any).data); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch {}
+    setSaving(false);
+  };
+
+  const updateKpiTarget = async (key: string, field: string, value: number) => {
+    if (!config) return;
+    const updated = { ...config.kpisConfig, [key]: { ...config.kpisConfig[key], [field]: value } };
+    setSaving(true);
+    try { const r = await apiClient.reportes.updateKpiConfig({ kpisConfig: updated }); setConfig((r as any).data); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch {}
+    setSaving(false);
+  };
+
+  const toggleChart = async (key: string) => {
+    if (!config) return;
+    const updated = { ...config.chartsConfig, [key]: { ...config.chartsConfig[key], enabled: !config.chartsConfig[key]?.enabled } };
+    setSaving(true);
+    try { const r = await apiClient.reportes.updateKpiConfig({ chartsConfig: updated }); setConfig((r as any).data); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch {}
+    setSaving(false);
+  };
+
+  const colorOptions = ['#16a34a', '#84cc16', '#06b6d4', '#ea580c', '#6366f1', '#2563eb', '#9333ea', '#ec4899', '#eab308'];
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-headline text-lg font-semibold text-on-surface">Indicadores (KPIs)</h2>
+          {saved && <span className="font-label text-xs text-success flex items-center gap-1"><Check className="w-3 h-3" /> Guardado</span>}
+        </div>
+        {!config ? (
+          <Card><p className="font-body text-sm text-on-surface-variant">Cargando...</p></Card>
+        ) : (
+          Object.entries(config.kpisConfig || {}).map(([key, kpi]: [string, any]) => (
+            <Card key={key}>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => toggleKpi(key)}
+                      className={`w-10 h-6 rounded-full transition-colors ${kpi.enabled ? 'bg-primary' : 'bg-outline-variant'} relative`}>
+                      <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all shadow-soft ${kpi.enabled ? 'left-5' : 'left-1'}`} />
+                    </button>
+                    <div>
+                      <h3 className="font-body font-medium text-sm text-on-surface">{kpi.label || key}</h3>
+                      <p className="font-label text-[10px] text-on-surface-variant uppercase">{kpi.type}</p>
+                    </div>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded-full font-label text-[10px] ${kpi.enabled ? 'bg-success/10 text-success' : 'bg-surface-container-highest text-on-surface-variant'}`}>
+                    {kpi.enabled ? 'Activo' : 'Inactivo'}
+                  </span>
+                </div>
+                {kpi.enabled && (
+                  <div className="grid grid-cols-2 gap-3 pl-[3.25rem]">
+                    <div>
+                      <label className="font-label text-[10px] text-on-surface-variant uppercase">Objetivo</label>
+                      <input type="number" value={kpi.target ?? ''} onChange={(e) => updateKpiTarget(key, 'target', Number(e.target.value))}
+                        className="neo-input w-full rounded-lg px-3 py-1.5 text-sm bg-surface-container-lowest mt-0.5" />
+                    </div>
+                    <div>
+                      <label className="font-label text-[10px] text-on-surface-variant uppercase">Alerta</label>
+                      <input type="number" value={kpi.warningAt ?? ''} onChange={(e) => updateKpiTarget(key, 'warningAt', Number(e.target.value))}
+                        className="neo-input w-full rounded-lg px-3 py-1.5 text-sm bg-surface-container-lowest mt-0.5" />
+                    </div>
+                    <div>
+                      <label className="font-label text-[10px] text-on-surface-variant uppercase">Color</label>
+                      <div className="flex gap-1 mt-0.5">
+                        {colorOptions.map((c) => (
+                          <button key={c} onClick={() => updateKpiTarget(key, 'color', 0)} // just to trigger save
+                            className={`w-5 h-5 rounded-full border-2 ${kpi.color === c ? 'border-on-surface' : 'border-transparent'}`} style={{ backgroundColor: c }} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="font-headline text-lg font-semibold text-on-surface">Gráficas</h2>
+        {!config ? (
+          <Card><p className="font-body text-sm text-on-surface-variant">Cargando...</p></Card>
+        ) : (
+          Object.entries(config.chartsConfig || {}).map(([key, chart]: [string, any]) => (
+            <Card key={key}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button onClick={() => toggleChart(key)}
+                    className={`w-10 h-6 rounded-full transition-colors ${chart.enabled ? 'bg-primary' : 'bg-outline-variant'} relative`}>
+                    <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all shadow-soft ${chart.enabled ? 'left-5' : 'left-1'}`} />
+                  </button>
+                  <div>
+                    <h3 className="font-body font-medium text-sm text-on-surface">{chart.title || key}</h3>
+                    <p className="font-label text-[10px] text-on-surface-variant">Tipo: {chart.type}</p>
+                  </div>
+                </div>
+                <span className={`px-2 py-0.5 rounded-full font-label text-[10px] ${chart.enabled ? 'bg-success/10 text-success' : 'bg-surface-container-highest text-on-surface-variant'}`}>
+                  {chart.enabled ? 'Visible' : 'Oculto'}
+                </span>
+              </div>
+            </Card>
+          ))
+        )}
+      </div>
     </div>
   );
 }
