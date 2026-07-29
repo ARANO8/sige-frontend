@@ -5,6 +5,7 @@ import { RoleGuard } from '@/src/components/ui/RoleGuard';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
+import { SearchableSelect } from '@/src/components/ui/SearchableSelect';
 import { inventariosApi, type MateriaPrima, type Producto, type Almacen, type Movimiento, type Categoria, type UnidadMedida } from '@/src/lib/inventarios-api';
 import { Package, Plus, Trash2, Archive, ArrowUpDown, Factory } from 'lucide-react';
 
@@ -276,16 +277,22 @@ function MovimientosSection({ showForm, onClose }: { showForm: boolean; onClose:
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ idAlmacen: '', idProducto: '', idMateriaPrima: '', tipo: 'ENTRADA' as Movimiento['tipo'], cantidad: 0, referencia: '' });
   const [almacenes, setAlmacenes] = useState<Almacen[]>([]);
+  const [productos, setProductos] = useState<{ id: string; nombre: string; codigo?: string }[]>([]);
+  const [materiasPrimas, setMateriasPrimas] = useState<{ id: string; nombre: string; codigo?: string }[]>([]);
 
   const load = async () => {
     try {
-      const [movRes, almRes] = await Promise.all([
+      const [movRes, almRes, prodRes, mpRes] = await Promise.all([
         inventariosApi.movimientos.list(page),
         inventariosApi.almacenes.list(),
+        inventariosApi.productos.list(),
+        inventariosApi.materiasPrimas.list(),
       ]);
       setItems(movRes.data.data);
       setTotal(movRes.data.total);
       setAlmacenes(almRes.data);
+      setProductos(prodRes.data.map((p: any) => ({ id: p.id, nombre: p.nombre, codigo: p.codigo })));
+      setMateriasPrimas(mpRes.data.map((m: any) => ({ id: m.id, nombre: m.nombre, codigo: m.codigo })));
     } catch {}
     setLoading(false);
   };
@@ -362,8 +369,8 @@ function MovimientosSection({ showForm, onClose }: { showForm: boolean; onClose:
                 {almacenes.map((a) => <option key={a.id} value={a.id}>{a.nombre}</option>)}
               </select>
             </div>
-            <Input label="ID Producto (opcional)" value={form.idProducto} onChange={(e) => setForm({ ...form, idProducto: e.target.value })} />
-            <Input label="ID Materia Prima (opcional)" value={form.idMateriaPrima} onChange={(e) => setForm({ ...form, idMateriaPrima: e.target.value })} />
+            <SearchableSelect label="Producto (opcional)" placeholder="Buscar producto..." items={productos} value={form.idProducto} onChange={(v) => setForm({ ...form, idProducto: v })} />
+            <SearchableSelect label="Materia Prima (opcional)" placeholder="Buscar materia prima..." items={materiasPrimas} value={form.idMateriaPrima} onChange={(v) => setForm({ ...form, idMateriaPrima: v })} />
             <Input label="Cantidad" type="number" value={form.cantidad} onChange={(e) => setForm({ ...form, cantidad: Number(e.target.value) })} />
             <Input label="Referencia" value={form.referencia} onChange={(e) => setForm({ ...form, referencia: e.target.value })} />
             <Button className="w-full" onClick={create}>Registrar</Button>

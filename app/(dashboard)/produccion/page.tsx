@@ -5,7 +5,9 @@ import { RoleGuard } from '@/src/components/ui/RoleGuard';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
+import { SearchableSelect } from '@/src/components/ui/SearchableSelect';
 import { apiClient } from '@/src/lib/api-client';
+import { api } from '@/src/lib/api';
 import { Factory, CheckCircle, XCircle, Package } from 'lucide-react';
 
 export default function ProduccionPage() {
@@ -19,6 +21,8 @@ export default function ProduccionPage() {
 function ProduccionContent() {
   const [ordenes, setOrdenes] = useState<any[]>([]);
   const [boms, setBoms] = useState<any[]>([]);
+  const [productos, setProductos] = useState<{ id: string; nombre: string; codigo?: string }[]>([]);
+  const [materiasPrimas, setMateriasPrimas] = useState<{ id: string; nombre: string; codigo?: string }[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [tab, setTab] = useState<'OP' | 'BOM'>('OP');
   const [form, setForm] = useState({ idProducto: '', idBOM: '', cantidadPlanificada: 1, observaciones: '' });
@@ -26,9 +30,16 @@ function ProduccionContent() {
 
   const load = async () => {
     try {
-      const [opRes, bomRes] = await Promise.all([apiClient.produccion.list(), apiClient.bom.list()]);
+      const [opRes, bomRes, prodRes, mpRes] = await Promise.all([
+        apiClient.produccion.list(),
+        apiClient.bom.list(),
+        api.get('/producto').catch(() => ({ data: [] })),
+        api.get('/materia-prima').catch(() => ({ data: [] })),
+      ]);
       setOrdenes(opRes.data);
       setBoms(bomRes.data);
+      setProductos((prodRes.data || []).map((p: any) => ({ id: p.id, nombre: p.nombre, codigo: p.codigo })));
+      setMateriasPrimas((mpRes.data || []).map((m: any) => ({ id: m.id, nombre: m.nombre, codigo: m.codigo })));
     } catch {}
   };
 
@@ -107,8 +118,8 @@ function ProduccionContent() {
             <Card>
               <div className="space-y-4">
                 <h2 className="font-headline text-lg font-semibold">Nueva OP</h2>
-                <Input label="ID Producto" value={form.idProducto} onChange={(e) => setForm({ ...form, idProducto: e.target.value })} />
-                <Input label="ID BOM (opcional)" value={form.idBOM} onChange={(e) => setForm({ ...form, idBOM: e.target.value })} />
+                <SearchableSelect label="Producto" placeholder="Buscar producto..." items={productos} value={form.idProducto} onChange={(v) => setForm({ ...form, idProducto: v })} required />
+                <SearchableSelect label="BOM (opcional)" placeholder="Buscar lista de materiales..." items={boms.map((b: any) => ({ id: b.id, nombre: b.nombre, codigo: `v${b.version}` }))} value={form.idBOM} onChange={(v) => setForm({ ...form, idBOM: v })} />
                 <Input label="Cantidad planificada" type="number" value={form.cantidadPlanificada} onChange={(e) => setForm({ ...form, cantidadPlanificada: Number(e.target.value) })} />
                 <Input label="Observaciones" value={form.observaciones} onChange={(e) => setForm({ ...form, observaciones: e.target.value })} />
                 <Button className="w-full" onClick={crearOP}>Crear</Button>
@@ -144,13 +155,14 @@ function ProduccionContent() {
             <Card>
               <div className="space-y-4">
                 <h2 className="font-headline text-lg font-semibold">Nueva BOM</h2>
-                <Input label="ID Producto" value={bomForm.idProducto} onChange={(e) => setBomForm({ ...bomForm, idProducto: e.target.value })} />
+                <SearchableSelect label="Producto" placeholder="Buscar producto..." items={productos} value={bomForm.idProducto} onChange={(v) => setBomForm({ ...bomForm, idProducto: v })} required />
                 <Input label="Nombre BOM" value={bomForm.nombre} onChange={(e) => setBomForm({ ...bomForm, nombre: e.target.value })} />
                 {bomForm.detalles.map((d, i) => (
                   <div key={i} className="flex gap-2">
-                    <Input placeholder="ID MP" value={d.idMateriaPrima} onChange={(e) => {
-                      const nd = [...bomForm.detalles]; nd[i].idMateriaPrima = e.target.value; setBomForm({ ...bomForm, detalles: nd });
-                    }} />
+                    <div className="flex-1 min-w-0">
+                      <SearchableSelect placeholder="Buscar materia prima..." items={materiasPrimas} value={d.idMateriaPrima}
+                        onChange={(v) => { const nd = [...bomForm.detalles]; nd[i].idMateriaPrima = v; setBomForm({ ...bomForm, detalles: nd }); }} />
+                    </div>
                     <Input placeholder="Cant" type="number" className="w-20" value={d.cantidad} onChange={(e) => {
                       const nd = [...bomForm.detalles]; nd[i].cantidad = Number(e.target.value); setBomForm({ ...bomForm, detalles: nd });
                     }} />

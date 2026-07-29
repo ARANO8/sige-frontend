@@ -5,7 +5,9 @@ import { RoleGuard } from '@/src/components/ui/RoleGuard';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
+import { SearchableSelect } from '@/src/components/ui/SearchableSelect';
 import { apiClient } from '@/src/lib/api-client';
+import { api } from '@/src/lib/api';
 import { ShoppingBag } from 'lucide-react';
 
 export default function VentasPage() {
@@ -19,6 +21,7 @@ export default function VentasPage() {
 function VentasContent() {
   const [ventas, setVentas] = useState<any[]>([]);
   const [clientes, setClientes] = useState<any[]>([]);
+  const [productos, setProductos] = useState<{ id: string; nombre: string; codigo?: string }[]>([]);
   const [tab, setTab] = useState<'VENTAS' | 'CLIENTES'>('VENTAS');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ idCliente: '', observaciones: '', detalles: [{ idProducto: '', cantidad: 1, precioUnitario: 0 }] });
@@ -26,9 +29,14 @@ function VentasContent() {
 
   const load = async () => {
     try {
-      const [vRes, cRes] = await Promise.all([apiClient.ventas.list(), apiClient.clientes.list()]);
+      const [vRes, cRes, pRes] = await Promise.all([
+        apiClient.ventas.list(),
+        apiClient.clientes.list(),
+        api.get('/producto').catch(() => ({ data: [] })),
+      ]);
       setVentas(vRes.data);
       setClientes(cRes.data);
+      setProductos((pRes.data || []).map((p: any) => ({ id: p.id, nombre: p.nombre, codigo: p.codigo })));
     } catch {}
   };
 
@@ -91,9 +99,14 @@ function VentasContent() {
                 </select>
                 {form.detalles.map((d, i) => (
                   <div key={i} className="flex gap-2">
-                    <Input placeholder="ID Producto" value={d.idProducto} onChange={(e) => { const nd = [...form.detalles]; nd[i].idProducto = e.target.value; setForm({ ...form, detalles: nd }); }} />
-                    <Input placeholder="Cant" type="number" className="w-20" value={d.cantidad} onChange={(e) => { const nd = [...form.detalles]; nd[i].cantidad = Number(e.target.value); setForm({ ...form, detalles: nd }); }} />
-                    <Input placeholder="P/U" type="number" className="w-24" value={d.precioUnitario} onChange={(e) => { const nd = [...form.detalles]; nd[i].precioUnitario = Number(e.target.value); setForm({ ...form, detalles: nd }); }} />
+                    <div className="flex-1 min-w-0">
+                      <SearchableSelect placeholder="Buscar producto..." items={productos} value={d.idProducto}
+                        onChange={(v) => { const nd = [...form.detalles]; nd[i].idProducto = v; setForm({ ...form, detalles: nd }); }} />
+                    </div>
+                    <Input placeholder="Cant" type="number" className="w-20" value={d.cantidad}
+                      onChange={(e) => { const nd = [...form.detalles]; nd[i].cantidad = Number(e.target.value); setForm({ ...form, detalles: nd }); }} />
+                    <Input placeholder="P/U" type="number" className="w-24" value={d.precioUnitario}
+                      onChange={(e) => { const nd = [...form.detalles]; nd[i].precioUnitario = Number(e.target.value); setForm({ ...form, detalles: nd }); }} />
                   </div>
                 ))}
                 <Button variant="ghost" onClick={() => setForm({ ...form, detalles: [...form.detalles, { idProducto: '', cantidad: 1, precioUnitario: 0 }] })}>+ Producto</Button>

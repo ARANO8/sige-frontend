@@ -5,7 +5,9 @@ import { RoleGuard } from '@/src/components/ui/RoleGuard';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
+import { SearchableSelect } from '@/src/components/ui/SearchableSelect';
 import { apiClient } from '@/src/lib/api-client';
+import { api } from '@/src/lib/api';
 import { ShoppingCart, CheckCircle, Truck, XCircle } from 'lucide-react';
 
 export default function ComprasPage() {
@@ -19,6 +21,7 @@ export default function ComprasPage() {
 function ComprasContent() {
   const [ocs, setOcs] = useState<any[]>([]);
   const [proveedores, setProveedores] = useState<any[]>([]);
+  const [materiasPrimas, setMateriasPrimas] = useState<{ id: string; nombre: string; codigo?: string }[]>([]);
   const [tab, setTab] = useState<'OC' | 'PROV'>('OC');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ idProveedor: '', fechaEntrega: '', detalles: [{ idMateriaPrima: '', cantidad: 1, precioUnitario: 0 }] });
@@ -26,9 +29,14 @@ function ComprasContent() {
 
   const load = async () => {
     try {
-      const [ocRes, provRes] = await Promise.all([apiClient.ordenCompra.list(), apiClient.proveedores.list()]);
+      const [ocRes, provRes, mpRes] = await Promise.all([
+        apiClient.ordenCompra.list(),
+        apiClient.proveedores.list(),
+        api.get('/materia-prima').catch(() => ({ data: [] })),
+      ]);
       setOcs(ocRes.data);
       setProveedores(provRes.data);
+      setMateriasPrimas((mpRes.data || []).map((m: any) => ({ id: m.id, nombre: m.nombre, codigo: m.codigo })));
     } catch {}
   };
 
@@ -111,7 +119,10 @@ function ComprasContent() {
                 </table>
                 {form.detalles.map((d, i) => (
                   <div key={i} className="flex gap-2">
-                    <Input placeholder="ID MP" value={d.idMateriaPrima} onChange={(e) => { const nd = [...form.detalles]; nd[i].idMateriaPrima = e.target.value; setForm({ ...form, detalles: nd }); }} />
+                    <div className="flex-1 min-w-0">
+                      <SearchableSelect placeholder="Buscar materia prima..." items={materiasPrimas} value={d.idMateriaPrima}
+                        onChange={(v) => { const nd = [...form.detalles]; nd[i].idMateriaPrima = v; setForm({ ...form, detalles: nd }); }} />
+                    </div>
                     <Input placeholder="Cant" type="number" className="w-20" value={d.cantidad} onChange={(e) => { const nd = [...form.detalles]; nd[i].cantidad = Number(e.target.value); setForm({ ...form, detalles: nd }); }} />
                     <Input placeholder="Precio" type="number" className="w-24" value={d.precioUnitario} onChange={(e) => { const nd = [...form.detalles]; nd[i].precioUnitario = Number(e.target.value); setForm({ ...form, detalles: nd }); }} />
                   </div>
