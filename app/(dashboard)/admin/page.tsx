@@ -41,8 +41,8 @@ export default function AdminPage() {
           })}
         </div>
 
-        {tab === 'usuarios' && <UsersTab showForm={showForm} onToggle={() => setShowForm(!showForm)} onClose={() => setShowForm(false)} />}
-        {tab === 'roles' && <RolesTab showForm={showForm} onToggle={() => setShowForm(!showForm)} />}
+        {tab === 'usuarios' && <UsersTab showForm={showForm} onOpen={() => setShowForm(true)} onToggle={() => setShowForm(!showForm)} onClose={() => setShowForm(false)} />}
+        {tab === 'roles' && <RolesTab showForm={showForm} onOpen={() => setShowForm(true)} onToggle={() => setShowForm(!showForm)} />}
         {tab === 'kpis' && <KpisTab />}
         {tab === 'empresa' && <EmpresaTab />}
       </div>
@@ -50,7 +50,7 @@ export default function AdminPage() {
   );
 }
 
-function UsersTab({ showForm, onToggle, onClose }: { showForm: boolean; onToggle: () => void; onClose: () => void }) {
+function UsersTab({ showForm, onOpen, onToggle, onClose }: { showForm: boolean; onOpen: () => void; onToggle: () => void; onClose: () => void }) {
   const [items, setItems] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +67,7 @@ function UsersTab({ showForm, onToggle, onClose }: { showForm: boolean; onToggle
   const handleEditUser = (u: any) => {
     setEditingUserId(u.id);
     setForm({ nombre: u.nombre, email: u.email, password: '', roles: u.usuarioRoles?.map((ur: any) => ur.rol?.id).filter(Boolean) ?? [] });
+    onOpen();
   };
 
   const handleSubmit = async () => {
@@ -135,7 +136,7 @@ function UsersTab({ showForm, onToggle, onClose }: { showForm: boolean; onToggle
   );
 }
 
-function RolesTab({ showForm, onToggle }: { showForm: boolean; onToggle: () => void }) {
+function RolesTab({ showForm, onOpen, onToggle }: { showForm: boolean; onOpen: () => void; onToggle: () => void }) {
   const [items, setItems] = useState<any[]>([]);
   const [permisos, setPermisos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,6 +153,7 @@ function RolesTab({ showForm, onToggle }: { showForm: boolean; onToggle: () => v
   const handleEditRole = (r: any) => {
     setEditingRoleId(r.id);
     setForm({ nombre: r.nombre, descripcion: r.descripcion ?? '', permisos: r.rolPermisos?.map((rp: any) => rp.permiso?.id).filter(Boolean) ?? [] });
+    onOpen();
   };
 
   const handleSubmit = async () => {

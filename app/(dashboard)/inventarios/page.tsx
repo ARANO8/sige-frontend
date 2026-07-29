@@ -62,15 +62,15 @@ function InventariosContent() {
         })}
       </div>
 
-      {activeTab === 'materias-primas' && <MateriasPrimasSection showForm={showForm} onClose={() => setShowForm(false)} />}
-      {activeTab === 'productos' && <ProductosSection showForm={showForm} onClose={() => setShowForm(false)} />}
-      {activeTab === 'almacenes' && <AlmacenesSection showForm={showForm} onClose={() => setShowForm(false)} />}
-      {activeTab === 'movimientos' && <MovimientosSection showForm={showForm} onClose={() => setShowForm(false)} />}
+      {activeTab === 'materias-primas' && <MateriasPrimasSection showForm={showForm} onOpen={() => setShowForm(true)} onClose={() => setShowForm(false)} />}
+      {activeTab === 'productos' && <ProductosSection showForm={showForm} onOpen={() => setShowForm(true)} onClose={() => setShowForm(false)} />}
+      {activeTab === 'almacenes' && <AlmacenesSection showForm={showForm} onOpen={() => setShowForm(true)} onClose={() => setShowForm(false)} />}
+      {activeTab === 'movimientos' && <MovimientosSection showForm={showForm} onOpen={() => setShowForm(true)} onClose={() => setShowForm(false)} />}
     </div>
   );
 }
 
-function MateriasPrimasSection({ showForm, onClose }: { showForm: boolean; onClose: () => void }) {
+function MateriasPrimasSection({ showForm, onOpen, onClose }: { showForm: boolean; onOpen: () => void; onClose: () => void }) {
   const [items, setItems] = useState<MateriaPrima[]>([]);
   const [form, setForm] = useState({ codigo: '', nombre: '', costoUnitario: 0, stockMinimo: 0 });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -86,6 +86,7 @@ function MateriasPrimasSection({ showForm, onClose }: { showForm: boolean; onClo
   const handleEdit = (mp: MateriaPrima) => {
     setEditingId(mp.id);
     setForm({ codigo: mp.codigo, nombre: mp.nombre, costoUnitario: Number(mp.costoUnitario), stockMinimo: Number(mp.stockMinimo) });
+    onOpen();
   };
 
   const handleSubmit = async () => {
@@ -140,7 +141,7 @@ function MateriasPrimasSection({ showForm, onClose }: { showForm: boolean; onClo
   );
 }
 
-function ProductosSection({ showForm, onClose }: { showForm: boolean; onClose: () => void }) {
+function ProductosSection({ showForm, onOpen, onClose }: { showForm: boolean; onOpen: () => void; onClose: () => void }) {
   const [items, setItems] = useState<Producto[]>([]);
   const [form, setForm] = useState({ codigo: '', nombre: '', precioVenta: 0, stockMinimo: 0 });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -149,7 +150,7 @@ function ProductosSection({ showForm, onClose }: { showForm: boolean; onClose: (
   const load = async () => { try { const res = await inventariosApi.productos.list(); setItems(res.data); } catch {}; setLoading(false); };
   useEffect(() => { load(); }, []);
 
-  const handleEdit = (p: Producto) => { setEditingId(p.id); setForm({ codigo: p.codigo, nombre: p.nombre, precioVenta: Number(p.precioVenta), stockMinimo: Number(p.stockMinimo) }); };
+  const handleEdit = (p: Producto) => { setEditingId(p.id); setForm({ codigo: p.codigo, nombre: p.nombre, precioVenta: Number(p.precioVenta), stockMinimo: Number(p.stockMinimo) }); onOpen(); };
 
   const handleSubmit = async () => {
     try {
@@ -198,7 +199,7 @@ function ProductosSection({ showForm, onClose }: { showForm: boolean; onClose: (
   );
 }
 
-function AlmacenesSection({ showForm, onClose }: { showForm: boolean; onClose: () => void }) {
+function AlmacenesSection({ showForm, onOpen, onClose }: { showForm: boolean; onOpen: () => void; onClose: () => void }) {
   const [items, setItems] = useState<Almacen[]>([]);
   const [form, setForm] = useState({ nombre: '', ubicacion: '' });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -253,7 +254,7 @@ function AlmacenesSection({ showForm, onClose }: { showForm: boolean; onClose: (
   );
 }
 
-function MovimientosSection({ showForm, onClose }: { showForm: boolean; onClose: () => void }) {
+function MovimientosSection({ showForm, onOpen, onClose }: { showForm: boolean; onOpen: () => void; onClose: () => void }) {
   const [items, setItems] = useState<Movimiento[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);

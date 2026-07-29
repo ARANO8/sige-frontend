@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const BASE_PATH = '/sige';
 const publicPaths = ['/login', '/register'];
 
 export function middleware(request: NextRequest) {
@@ -10,11 +11,11 @@ export function middleware(request: NextRequest) {
   const isPublic = publicPaths.some((p) => pathname.startsWith(p)) || pathname === '/';
 
   if (!token && !isPublic) {
-    return NextResponse.redirect(new URL('/login', request.url));
+    return NextResponse.redirect(new URL(`${BASE_PATH}/login`, request.url));
   }
 
   if (token && (pathname === '/login' || pathname === '/register')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    return NextResponse.redirect(new URL(`${BASE_PATH}/dashboard`, request.url));
   }
 
   return NextResponse.next();
