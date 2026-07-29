@@ -199,37 +199,49 @@ function RolesTab({ showForm, onToggle }: { showForm: boolean; onToggle: () => v
 
 function KpisTab() {
   const [config, setConfig] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [updateKey, setUpdateKey] = useState(0);
 
   const load = async () => {
-    try { const r = await apiClient.reportes.kpiConfig(); setConfig(r.data); } catch {}
+    try { const r = await apiClient.reportes.kpiConfig(); setConfig(r.data); } catch (e) { console.error('Error loading KPI config:', e); }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [updateKey]);
 
-  const toggleKpi = async (key: string) => {
-    if (!config) return;
-    const updated = { ...config.kpisConfig, [key]: { ...config.kpisConfig[key], enabled: !config.kpisConfig[key]?.enabled } };
-    setSaving(true);
-    try { const r = await apiClient.reportes.updateKpiConfig({ kpisConfig: updated }); setConfig((r as any).data); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch {}
-    setSaving(false);
+  const saveKpis = async (newKpis: any) => {
+    try {
+      const r = await apiClient.reportes.updateKpiConfig({ kpisConfig: newKpis });
+      setConfig(r.data);
+      setUpdateKey(k => k + 1);
+    } catch (e) { console.error('Error saving KPI config:', e); }
   };
 
-  const updateKpiTarget = async (key: string, field: string, value: number) => {
-    if (!config) return;
-    const updated = { ...config.kpisConfig, [key]: { ...config.kpisConfig[key], [field]: value } };
-    setSaving(true);
-    try { const r = await apiClient.reportes.updateKpiConfig({ kpisConfig: updated }); setConfig((r as any).data); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch {}
-    setSaving(false);
+  const saveCharts = async (newCharts: any) => {
+    try {
+      const r = await apiClient.reportes.updateKpiConfig({ chartsConfig: newCharts });
+      setConfig(r.data);
+      setUpdateKey(k => k + 1);
+    } catch (e) { console.error('Error saving chart config:', e); }
   };
 
-  const toggleChart = async (key: string) => {
+  const toggleKpi = (key: string) => {
     if (!config) return;
-    const updated = { ...config.chartsConfig, [key]: { ...config.chartsConfig[key], enabled: !config.chartsConfig[key]?.enabled } };
-    setSaving(true);
-    try { const r = await apiClient.reportes.updateKpiConfig({ chartsConfig: updated }); setConfig((r as any).data); setSaved(true); setTimeout(() => setSaved(false), 2000); } catch {}
-    setSaving(false);
+    const updated = JSON.parse(JSON.stringify(config.kpisConfig));
+    updated[key] = { ...updated[key], enabled: !updated[key]?.enabled };
+    saveKpis(updated);
+  };
+
+  const updateKpiField = (key: string, field: string, value: any) => {
+    if (!config) return;
+    const updated = JSON.parse(JSON.stringify(config.kpisConfig));
+    updated[key] = { ...updated[key], [field]: value };
+    saveKpis(updated);
+  };
+
+  const toggleChart = (key: string) => {
+    if (!config) return;
+    const updated = JSON.parse(JSON.stringify(config.chartsConfig));
+    updated[key] = { ...updated[key], enabled: !updated[key]?.enabled };
+    saveCharts(updated);
   };
 
   const colorOptions = ['#16a34a', '#84cc16', '#06b6d4', '#ea580c', '#6366f1', '#2563eb', '#9333ea', '#ec4899', '#eab308'];
@@ -237,12 +249,10 @@ function KpisTab() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-headline text-lg font-semibold text-on-surface">Indicadores (KPIs)</h2>
-          {saved && <span className="font-label text-xs text-success flex items-center gap-1"><Check className="w-3 h-3" /> Guardado</span>}
-        </div>
+        <h2 className="font-headline text-lg font-semibold text-on-surface">Indicadores (KPIs)</h2>
+        <p className="font-body text-sm text-on-surface-variant mb-2">Activa o desactiva cada indicador y ajusta sus objetivos</p>
         {!config ? (
-          <Card><p className="font-body text-sm text-on-surface-variant">Cargando...</p></Card>
+          <Card><p className="font-body text-sm text-on-surface-variant">Cargando configuración...</p></Card>
         ) : (
           Object.entries(config.kpisConfig || {}).map(([key, kpi]: [string, any]) => (
             <Card key={key}>
@@ -263,23 +273,26 @@ function KpisTab() {
                   </span>
                 </div>
                 {kpi.enabled && (
-                  <div className="grid grid-cols-2 gap-3 pl-[3.25rem]">
+                  <div className="grid grid-cols-3 gap-3 pl-[3.25rem]">
                     <div>
-                      <label className="font-label text-[10px] text-on-surface-variant uppercase">Objetivo</label>
-                      <input type="number" value={kpi.target ?? ''} onChange={(e) => updateKpiTarget(key, 'target', Number(e.target.value))}
+                      <label className="font-label text-[10px] text-on-surface-variant uppercase">Objetivo $</label>
+                      <input type="number" value={kpi.target ?? ''}
+                        onChange={(e) => updateKpiField(key, 'target', Number(e.target.value))}
                         className="neo-input w-full rounded-lg px-3 py-1.5 text-sm bg-surface-container-lowest mt-0.5" />
                     </div>
                     <div>
                       <label className="font-label text-[10px] text-on-surface-variant uppercase">Alerta</label>
-                      <input type="number" value={kpi.warningAt ?? ''} onChange={(e) => updateKpiTarget(key, 'warningAt', Number(e.target.value))}
+                      <input type="number" value={kpi.warningAt ?? ''}
+                        onChange={(e) => updateKpiField(key, 'warningAt', Number(e.target.value))}
                         className="neo-input w-full rounded-lg px-3 py-1.5 text-sm bg-surface-container-lowest mt-0.5" />
                     </div>
                     <div>
                       <label className="font-label text-[10px] text-on-surface-variant uppercase">Color</label>
-                      <div className="flex gap-1 mt-0.5">
+                      <div className="flex flex-wrap gap-1 mt-0.5">
                         {colorOptions.map((c) => (
-                          <button key={c} onClick={() => updateKpiTarget(key, 'color', 0)} // just to trigger save
-                            className={`w-5 h-5 rounded-full border-2 ${kpi.color === c ? 'border-on-surface' : 'border-transparent'}`} style={{ backgroundColor: c }} />
+                          <button key={c} onClick={() => updateKpiField(key, 'color', c)}
+                            className={`w-5 h-5 rounded-full border-2 ${kpi.color === c ? 'border-on-surface scale-110' : 'border-transparent'}`}
+                            style={{ backgroundColor: c }} title={c} />
                         ))}
                       </div>
                     </div>
@@ -292,7 +305,8 @@ function KpisTab() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="font-headline text-lg font-semibold text-on-surface">Gráficas</h2>
+        <h2 className="font-headline text-lg font-semibold text-on-surface">Gráficas del Dashboard</h2>
+        <p className="font-body text-sm text-on-surface-variant mb-2">Muestra u oculta cada gráfica en el dashboard y reportes</p>
         {!config ? (
           <Card><p className="font-body text-sm text-on-surface-variant">Cargando...</p></Card>
         ) : (
@@ -306,7 +320,7 @@ function KpisTab() {
                   </button>
                   <div>
                     <h3 className="font-body font-medium text-sm text-on-surface">{chart.title || key}</h3>
-                    <p className="font-label text-[10px] text-on-surface-variant">Tipo: {chart.type}</p>
+                    <p className="font-label text-[10px] text-on-surface-variant">Tipo: {chart.type} | {chart.enabled ? 'Visible en dashboard' : 'Oculto'}</p>
                   </div>
                 </div>
                 <span className={`px-2 py-0.5 rounded-full font-label text-[10px] ${chart.enabled ? 'bg-success/10 text-success' : 'bg-surface-container-highest text-on-surface-variant'}`}>
