@@ -8,7 +8,7 @@ import { Input } from '@/src/components/ui/Input';
 import { SearchableSelect } from '@/src/components/ui/SearchableSelect';
 import { apiClient } from '@/src/lib/api-client';
 import { api } from '@/src/lib/api';
-import { ShoppingBag } from 'lucide-react';
+import { ShoppingBag, Pencil, Trash2, XCircle } from 'lucide-react';
 
 export default function VentasPage() {
   return (
@@ -24,6 +24,7 @@ function VentasContent() {
   const [productos, setProductos] = useState<{ id: string; nombre: string; codigo?: string }[]>([]);
   const [tab, setTab] = useState<'VENTAS' | 'CLIENTES'>('VENTAS');
   const [showForm, setShowForm] = useState(false);
+  const [editingCliId, setEditingCliId] = useState<string | null>(null);
   const [form, setForm] = useState({ idCliente: '', observaciones: '', detalles: [{ idProducto: '', cantidad: 1, precioUnitario: 0 }] });
   const [cliForm, setCliForm] = useState({ nombre: '', nit: '', telefono: '' });
 
@@ -45,8 +46,14 @@ function VentasContent() {
   const crearVenta = async () => {
     try { await apiClient.ventas.create(form); setShowForm(false); await load(); } catch {}
   };
+  const handleEditCli = (c: any) => { setEditingCliId(c.id); setCliForm({ nombre: c.nombre, nit: c.nit ?? '', telefono: c.telefono ?? '' }); setShowForm(true); };
+
   const crearCliente = async () => {
-    try { await apiClient.clientes.create(cliForm); setShowForm(false); await load(); } catch {}
+    try {
+      if (editingCliId) await apiClient.clientes.update(editingCliId, cliForm);
+      else await apiClient.clientes.create(cliForm);
+      setEditingCliId(null); setCliForm({ nombre: '', nit: '', telefono: '' }); setShowForm(false); await load();
+    } catch {}
   };
 
   const statusColor: Record<string, string> = {
@@ -78,6 +85,10 @@ function VentasContent() {
                       <h3 className="font-body font-medium">{v.cliente?.nombre || '-'}</h3>
                       <span className={`px-2 py-0.5 rounded-full font-label text-[10px] ${statusColor[v.estado] || ''}`}>{v.estado}</span>
                       {v.factura && <span className="font-label text-xs text-on-surface-variant">Fact: {v.factura.numero}</span>}
+                      {v.estado === 'FACTURADA' && (
+                        <button onClick={async () => { try { await apiClient.ventas.anular(v.id); await load(); } catch {} }}
+                          className="ml-2 p-1 text-warning hover:bg-warning/10 rounded-lg" title="Anular venta"><XCircle className="w-4 h-4" /></button>
+                      )}
                     </div>
                     <p className="font-label text-xs text-on-surface-variant">
                       ${Number(v.total).toFixed(2)} · {v.detalles?.length || 0} items · {new Date(v.fecha).toLocaleDateString()}
@@ -122,19 +133,27 @@ function VentasContent() {
           <div className="lg:col-span-2 space-y-4">
             {clientes.map((c) => (
               <Card key={c.id}>
-                <h3 className="font-body font-medium">{c.nombre}</h3>
-                <p className="font-label text-xs text-on-surface-variant">{c.nit || 'Sin NIT'} · {c.telefono || ''}</p>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-body font-medium">{c.nombre}</h3>
+                    <p className="font-label text-xs text-on-surface-variant">{c.nit || 'Sin NIT'} · {c.telefono || ''}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => handleEditCli(c)} className="p-1.5 text-info hover:bg-info/10 rounded-lg"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={async () => { try { await apiClient.clientes.remove(c.id); await load(); } catch {} }} className="p-1.5 text-on-surface-variant hover:text-error"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
               </Card>
             ))}
           </div>
           {showForm && (
             <Card>
-              <h2 className="font-headline text-lg font-semibold mb-4">Nuevo Cliente</h2>
+              <h2 className="font-headline text-lg font-semibold mb-4">{editingCliId ? 'Editar Cliente' : 'Nuevo Cliente'}</h2>
               <div className="space-y-3">
                 <Input label="Nombre" value={cliForm.nombre} onChange={(e) => setCliForm({ ...cliForm, nombre: e.target.value })} />
                 <Input label="NIT" value={cliForm.nit} onChange={(e) => setCliForm({ ...cliForm, nit: e.target.value })} />
                 <Input label="Teléfono" value={cliForm.telefono} onChange={(e) => setCliForm({ ...cliForm, telefono: e.target.value })} />
-                <Button className="w-full" onClick={crearCliente}>Guardar</Button>
+                <Button className="w-full" onClick={crearCliente}>{editingCliId ? 'Guardar cambios' : 'Guardar'}</Button>
               </div>
             </Card>
           )}

@@ -7,7 +7,7 @@ import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { apiClient } from '@/src/lib/api-client';
 import { useAuth } from '@/src/contexts/AuthContext';
-import { Shield, Users, Building2, BarChart3, Trash2, Check, X } from 'lucide-react';
+import { Shield, Users, Building2, BarChart3, Trash2, Check, X, Pencil } from 'lucide-react';
 
 type Tab = 'usuarios' | 'roles' | 'empresa' | 'kpis';
 
@@ -55,6 +55,7 @@ function UsersTab({ showForm, onToggle, onClose }: { showForm: boolean; onToggle
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ nombre: '', email: '', password: '', roles: [] as string[] });
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
 
   const load = async () => {
     try { const [u, r] = await Promise.all([apiClient.usuarios.list(), apiClient.rolesAdmin.list()]); setItems(u.data); setRoles(r.data); } catch {}
@@ -63,8 +64,17 @@ function UsersTab({ showForm, onToggle, onClose }: { showForm: boolean; onToggle
 
   useEffect(() => { load(); }, []);
 
-  const create = async () => {
-    try { await apiClient.usuarios.create(form); onClose(); await load(); } catch (e: any) { alert('Error: ' + (e.response?.data?.message || e.message)); }
+  const handleEditUser = (u: any) => {
+    setEditingUserId(u.id);
+    setForm({ nombre: u.nombre, email: u.email, password: '', roles: u.usuarioRoles?.map((ur: any) => ur.rol?.id).filter(Boolean) ?? [] });
+  };
+
+  const handleSubmit = async () => {
+    try {
+      if (editingUserId) await apiClient.usuarios.update(editingUserId, form);
+      else await apiClient.usuarios.create(form);
+      setEditingUserId(null); setForm({ nombre: '', email: '', password: '', roles: [] }); onClose(); await load();
+    } catch (e: any) { alert('Error: ' + (e.response?.data?.message || e.message)); }
   };
 
   const remove = async (id: string) => { try { await apiClient.usuarios.remove(id); await load(); } catch {} };
@@ -87,6 +97,7 @@ function UsersTab({ showForm, onToggle, onClose }: { showForm: boolean; onToggle
                 </div>
                 <div className="flex gap-2">
                   <span className={`px-2 py-0.5 rounded-full font-label text-[10px] ${u.estado === 'ACTIVO' ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>{u.estado}</span>
+                  <button onClick={() => handleEditUser(u)} className="p-1 text-info hover:bg-info/10 rounded-lg"><Pencil className="w-4 h-4" /></button>
                   <button onClick={() => remove(u.id)} className="p-1 text-on-surface-variant hover:text-error"><Trash2 className="w-4 h-4" /></button>
                 </div>
               </div>
@@ -97,11 +108,11 @@ function UsersTab({ showForm, onToggle, onClose }: { showForm: boolean; onToggle
 
       {showForm && (
         <Card>
-          <h2 className="font-headline text-lg font-semibold mb-4">Nuevo Usuario</h2>
+          <h2 className="font-headline text-lg font-semibold mb-4">{editingUserId ? 'Editar Usuario' : 'Nuevo Usuario'}</h2>
           <div className="space-y-3">
             <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
             <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-            <Input label="Contraseña" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            <Input label="Contraseña {editingUserId ? '(dejar vacío para mantener)' : ''}" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
             <div>
               <label className="font-label text-xs text-on-surface-variant uppercase tracking-wider mb-1.5 block">Roles</label>
               <div className="space-y-1.5">
@@ -116,7 +127,7 @@ function UsersTab({ showForm, onToggle, onClose }: { showForm: boolean; onToggle
                 ))}
               </div>
             </div>
-            <Button className="w-full" onClick={create}>Crear Usuario</Button>
+            <Button className="w-full" onClick={handleSubmit}>{editingUserId ? 'Guardar cambios' : 'Crear Usuario'}</Button>
           </div>
         </Card>
       )}
@@ -129,6 +140,7 @@ function RolesTab({ showForm, onToggle }: { showForm: boolean; onToggle: () => v
   const [permisos, setPermisos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ nombre: '', descripcion: '', permisos: [] as string[] });
+  const [editingRoleId, setEditingRoleId] = useState<string | null>(null);
 
   const load = async () => {
     try { const [r, p] = await Promise.all([apiClient.rolesAdmin.list(), apiClient.permisos.list()]); setItems(r.data); setPermisos(p.data); } catch {}
@@ -137,9 +149,20 @@ function RolesTab({ showForm, onToggle }: { showForm: boolean; onToggle: () => v
 
   useEffect(() => { load(); }, []);
 
-  const create = async () => {
-    try { await apiClient.rolesAdmin.create(form); onToggle(); await load(); } catch (e: any) { alert('Error: ' + (e.response?.data?.message || e.message)); }
+  const handleEditRole = (r: any) => {
+    setEditingRoleId(r.id);
+    setForm({ nombre: r.nombre, descripcion: r.descripcion ?? '', permisos: r.rolPermisos?.map((rp: any) => rp.permiso?.id).filter(Boolean) ?? [] });
   };
+
+  const handleSubmit = async () => {
+    try {
+      if (editingRoleId) await apiClient.rolesAdmin.update(editingRoleId, form);
+      else await apiClient.rolesAdmin.create(form);
+      setEditingRoleId(null); setForm({ nombre: '', descripcion: '', permisos: [] }); onToggle(); await load();
+    } catch (e: any) { alert('Error: ' + (e.response?.data?.message || e.message)); }
+  };
+
+  const removeRole = async (id: string) => { try { await apiClient.rolesAdmin.remove(id); await load(); } catch {} };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -148,9 +171,15 @@ function RolesTab({ showForm, onToggle }: { showForm: boolean; onToggle: () => v
           items.map((r) => (
             <Card key={r.id}>
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-body font-medium text-on-surface">{r.nombre}</h3>
-                  <span className={`px-2 py-0.5 rounded-full font-label text-[10px] ${r.estado === 'ACTIVO' ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>{r.estado}</span>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-body font-medium text-on-surface">{r.nombre}</h3>
+                    <span className={`px-2 py-0.5 rounded-full font-label text-[10px] ${r.estado === 'ACTIVO' ? 'bg-success/10 text-success' : 'bg-error/10 text-error'}`}>{r.estado}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => handleEditRole(r)} className="p-1 text-info hover:bg-info/10 rounded-lg"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => removeRole(r.id)} className="p-1 text-on-surface-variant hover:text-error"><Trash2 className="w-4 h-4" /></button>
+                  </div>
                 </div>
                 {r.descripcion && <p className="font-label text-xs text-on-surface-variant">{r.descripcion}</p>}
                 {r.rolPermisos && r.rolPermisos.length > 0 && (
@@ -170,7 +199,7 @@ function RolesTab({ showForm, onToggle }: { showForm: boolean; onToggle: () => v
 
       {showForm && (
         <Card>
-          <h2 className="font-headline text-lg font-semibold mb-4">Nuevo Rol</h2>
+          <h2 className="font-headline text-lg font-semibold mb-4">{editingRoleId ? 'Editar Rol' : 'Nuevo Rol'}</h2>
           <div className="space-y-3">
             <Input label="Nombre del rol" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
             <Input label="Descripción" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
@@ -189,7 +218,7 @@ function RolesTab({ showForm, onToggle }: { showForm: boolean; onToggle: () => v
                 ))}
               </div>
             </div>
-            <Button className="w-full" onClick={create}>Crear Rol</Button>
+            <Button className="w-full" onClick={handleSubmit}>{editingRoleId ? 'Guardar cambios' : 'Crear Rol'}</Button>
           </div>
         </Card>
       )}

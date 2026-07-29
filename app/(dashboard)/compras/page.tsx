@@ -8,7 +8,7 @@ import { Input } from '@/src/components/ui/Input';
 import { SearchableSelect } from '@/src/components/ui/SearchableSelect';
 import { apiClient } from '@/src/lib/api-client';
 import { api } from '@/src/lib/api';
-import { ShoppingCart, CheckCircle, Truck, XCircle } from 'lucide-react';
+import { ShoppingCart, CheckCircle, Truck, XCircle, Pencil, Trash2 } from 'lucide-react';
 
 export default function ComprasPage() {
   return (
@@ -26,6 +26,7 @@ function ComprasContent() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ idProveedor: '', fechaEntrega: '', detalles: [{ idMateriaPrima: '', cantidad: 1, precioUnitario: 0 }] });
   const [provForm, setProvForm] = useState({ nombre: '', nit: '', telefono: '' });
+  const [editingProvId, setEditingProvId] = useState<string | null>(null);
 
   const load = async () => {
     try {
@@ -54,8 +55,14 @@ function ComprasContent() {
     try { await apiClient.ordenCompra.aprobar(id); await load(); } catch {}
   };
 
+  const handleEditProv = (p: any) => { setEditingProvId(p.id); setProvForm({ nombre: p.nombre, nit: p.nit ?? '', telefono: p.telefono ?? '' }); setShowForm(true); };
+
   const crearProv = async () => {
-    try { await apiClient.proveedores.create(provForm); setShowForm(false); await load(); } catch {}
+    try {
+      if (editingProvId) await apiClient.proveedores.update(editingProvId, provForm);
+      else await apiClient.proveedores.create(provForm);
+      setEditingProvId(null); setProvForm({ nombre: '', nit: '', telefono: '' }); setShowForm(false); await load();
+    } catch {}
   };
 
   const statusColor: Record<string, string> = {
@@ -140,19 +147,27 @@ function ComprasContent() {
           <div className="lg:col-span-2 space-y-4">
             {proveedores.map((p) => (
               <Card key={p.id}>
-                <h3 className="font-body font-medium">{p.nombre}</h3>
-                <p className="font-label text-xs text-on-surface-variant">{p.nit || 'Sin NIT'} · {p.telefono || ''}</p>
+                <div className="flex items-start justify-between">
+                  <div className="space-y-1">
+                    <h3 className="font-body font-medium">{p.nombre}</h3>
+                    <p className="font-label text-xs text-on-surface-variant">{p.nit || 'Sin NIT'} · {p.telefono || ''}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => handleEditProv(p)} className="p-1.5 text-info hover:bg-info/10 rounded-lg"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={async () => { try { await apiClient.proveedores.remove(p.id); await load(); } catch {} }} className="p-1.5 text-on-surface-variant hover:text-error"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
               </Card>
             ))}
           </div>
           {showForm && (
             <Card>
-              <h2 className="font-headline text-lg font-semibold mb-4">Nuevo Proveedor</h2>
+              <h2 className="font-headline text-lg font-semibold mb-4">{editingProvId ? 'Editar Proveedor' : 'Nuevo Proveedor'}</h2>
               <div className="space-y-3">
                 <Input label="Nombre" value={provForm.nombre} onChange={(e) => setProvForm({ ...provForm, nombre: e.target.value })} />
                 <Input label="NIT" value={provForm.nit} onChange={(e) => setProvForm({ ...provForm, nit: e.target.value })} />
                 <Input label="Teléfono" value={provForm.telefono} onChange={(e) => setProvForm({ ...provForm, telefono: e.target.value })} />
-                <Button className="w-full" onClick={crearProv}>Guardar</Button>
+                <Button className="w-full" onClick={crearProv}>{editingProvId ? 'Guardar cambios' : 'Guardar'}</Button>
               </div>
             </Card>
           )}

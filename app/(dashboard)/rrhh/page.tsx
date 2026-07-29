@@ -6,7 +6,7 @@ import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { apiClient } from '@/src/lib/api-client';
-import { Users, Clock, Briefcase } from 'lucide-react';
+import { Users, Clock, Briefcase, Pencil } from 'lucide-react';
 
 type Tab = 'empleados' | 'turnos' | 'horas';
 
@@ -28,6 +28,8 @@ function RRHHContent() {
 
   const [empForm, setEmpForm] = useState({ nombre: '', apellido: '', email: '', telefono: '', idCargo: '' });
   const [turnoForm, setTurnoForm] = useState({ nombre: '', horaInicio: '', horaFin: '' });
+  const [editingEmpId, setEditingEmpId] = useState<string | null>(null);
+  const [editingTurnoId, setEditingTurnoId] = useState<string | null>(null);
   const [horaForm, setHoraForm] = useState({ idEmpleado: '', idTurno: '', fecha: '', horaEntrada: '', horaSalida: '' });
 
   const load = async () => {
@@ -47,11 +49,22 @@ function RRHHContent() {
 
   useEffect(() => { load(); }, []);
 
+  const handleEditEmp = (e: any) => { setEditingEmpId(e.id); setEmpForm({ nombre: e.nombre, apellido: e.apellido, email: e.email ?? '', telefono: e.telefono ?? '', idCargo: e.idCargo ?? '' }); setShowForm(true); };
+  const handleEditTurno = (t: any) => { setEditingTurnoId(t.id); setTurnoForm({ nombre: t.nombre, horaInicio: t.horaInicio, horaFin: t.horaFin }); setShowForm(true); };
+
   const crearEmpleado = async () => {
-    try { await apiClient.empleado.create(empForm); setShowForm(false); await load(); } catch {}
+    try {
+      if (editingEmpId) await apiClient.empleado.update(editingEmpId, empForm);
+      else await apiClient.empleado.create(empForm);
+      setEditingEmpId(null); setShowForm(false); await load();
+    } catch {}
   };
   const crearTurno = async () => {
-    try { await apiClient.turno.create(turnoForm); setShowForm(false); await load(); } catch {}
+    try {
+      if (editingTurnoId) await apiClient.turno.update(editingTurnoId, turnoForm);
+      else await apiClient.turno.create(turnoForm);
+      setEditingTurnoId(null); setShowForm(false); await load();
+    } catch {}
   };
   const crearRegistro = async () => {
     try { await apiClient.registroHoras.create(horaForm); setShowForm(false); await load(); } catch {}
@@ -100,10 +113,13 @@ function RRHHContent() {
             ) : (
               empleados.map((e) => (
                 <Card key={e.id}>
-                  <div className="space-y-1">
-                    <h3 className="font-body font-medium">{e.nombre} {e.apellido}</h3>
-                    <p className="font-label text-xs text-on-surface-variant">{e.email || 'Sin email'} · {e.telefono || ''}</p>
-                    {e.cargo && <span className="inline-block px-2 py-0.5 rounded-full bg-primary-container/10 text-primary font-label text-xs">{e.cargo.nombre}</span>}
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <h3 className="font-body font-medium">{e.nombre} {e.apellido}</h3>
+                      <p className="font-label text-xs text-on-surface-variant">{e.email || 'Sin email'} · {e.telefono || ''}</p>
+                      {e.cargo && <span className="inline-block px-2 py-0.5 rounded-full bg-primary-container/10 text-primary font-label text-xs">{e.cargo.nombre}</span>}
+                    </div>
+                    <button onClick={() => handleEditEmp(e)} className="p-1.5 text-info hover:bg-info/10 rounded-lg"><Pencil className="w-4 h-4" /></button>
                   </div>
                 </Card>
               ))
@@ -112,12 +128,12 @@ function RRHHContent() {
 
           {showForm && (
             <Card>
-              <h2 className="font-headline text-lg font-semibold mb-4">Nuevo Empleado</h2>
+              <h2 className="font-headline text-lg font-semibold mb-4">{editingEmpId ? 'Editar Empleado' : 'Nuevo Empleado'}</h2>
               <div className="space-y-3">
-                <Input label="Nombre" value={empForm.nombre} onChange={(e) => setEmpForm({ ...empForm, nombre: e.target.value })} />
-                <Input label="Apellido" value={empForm.apellido} onChange={(e) => setEmpForm({ ...empForm, apellido: e.target.value })} />
-                <Input label="Email" type="email" value={empForm.email} onChange={(e) => setEmpForm({ ...empForm, email: e.target.value })} />
-                <Input label="Teléfono" value={empForm.telefono} onChange={(e) => setEmpForm({ ...empForm, telefono: e.target.value })} />
+                <Input label="Nombre" value={empForm.nombre} onChange={(e) => setEmpForm({ ...empForm, nombre: (e.target as HTMLInputElement).value })} />
+                <Input label="Apellido" value={empForm.apellido} onChange={(e) => setEmpForm({ ...empForm, apellido: (e.target as HTMLInputElement).value })} />
+                <Input label="Email" type="email" value={empForm.email} onChange={(e) => setEmpForm({ ...empForm, email: (e.target as HTMLInputElement).value })} />
+                <Input label="Teléfono" value={empForm.telefono} onChange={(e) => setEmpForm({ ...empForm, telefono: (e.target as HTMLInputElement).value })} />
                 <div>
                   <label className="font-label text-xs text-on-surface-variant uppercase tracking-wider mb-1 block">Cargo</label>
                   <select value={empForm.idCargo} onChange={(e) => setEmpForm({ ...empForm, idCargo: e.target.value })}
@@ -126,7 +142,7 @@ function RRHHContent() {
                     {cargos.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                   </select>
                 </div>
-                <Button className="w-full" onClick={crearEmpleado}>Guardar</Button>
+                <Button className="w-full" onClick={crearEmpleado}>{editingEmpId ? 'Guardar cambios' : 'Guardar'}</Button>
               </div>
             </Card>
           )}

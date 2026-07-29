@@ -7,7 +7,7 @@ import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { SearchableSelect } from '@/src/components/ui/SearchableSelect';
 import { inventariosApi, type MateriaPrima, type Producto, type Almacen, type Movimiento, type Categoria, type UnidadMedida } from '@/src/lib/inventarios-api';
-import { Package, Plus, Trash2, Archive, ArrowUpDown, Factory } from 'lucide-react';
+import { Package, Plus, Trash2, Archive, ArrowUpDown, Factory, Pencil } from 'lucide-react';
 
 type Tab = 'materias-primas' | 'productos' | 'almacenes' | 'movimientos';
 
@@ -73,43 +73,40 @@ function InventariosContent() {
 function MateriasPrimasSection({ showForm, onClose }: { showForm: boolean; onClose: () => void }) {
   const [items, setItems] = useState<MateriaPrima[]>([]);
   const [form, setForm] = useState({ codigo: '', nombre: '', costoUnitario: 0, stockMinimo: 0 });
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    try {
-      const res = await inventariosApi.materiasPrimas.list();
-      setItems(res.data);
-    } catch {}
+    try { const res = await inventariosApi.materiasPrimas.list(); setItems(res.data); } catch {}
     setLoading(false);
   };
 
   useEffect(() => { load(); }, []);
 
-  const create = async () => {
+  const handleEdit = (mp: MateriaPrima) => {
+    setEditingId(mp.id);
+    setForm({ codigo: mp.codigo, nombre: mp.nombre, costoUnitario: Number(mp.costoUnitario), stockMinimo: Number(mp.stockMinimo) });
+  };
+
+  const handleSubmit = async () => {
     try {
-      await inventariosApi.materiasPrimas.create(form);
+      if (editingId) await inventariosApi.materiasPrimas.update(editingId, form);
+      else await inventariosApi.materiasPrimas.create(form);
       setForm({ codigo: '', nombre: '', costoUnitario: 0, stockMinimo: 0 });
+      setEditingId(null);
       onClose();
       await load();
     } catch {}
   };
 
-  const remove = async (id: string) => {
-    try {
-      await inventariosApi.materiasPrimas.remove(id);
-      await load();
-    } catch {}
-  };
+  const remove = async (id: string) => { try { await inventariosApi.materiasPrimas.remove(id); await load(); } catch {} };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-4">
-        {loading ? (
-          <Card><p className="font-body text-sm text-on-surface-variant">Cargando...</p></Card>
-        ) : items.length === 0 ? (
-          <Card><p className="font-body text-sm text-on-surface-variant">No hay materias primas registradas</p></Card>
-        ) : (
-          items.map((mp) => (
+        {loading ? <Card><p className="font-body text-sm text-on-surface-variant">Cargando...</p></Card>
+        : items.length === 0 ? <Card><p className="font-body text-sm text-on-surface-variant">No hay materias primas registradas</p></Card>
+        : items.map((mp) => (
             <Card key={mp.id} className="flex items-center justify-between">
               <div className="space-y-1">
                 <h3 className="font-body font-medium text-on-surface">{mp.nombre}</h3>
@@ -118,23 +115,24 @@ function MateriasPrimasSection({ showForm, onClose }: { showForm: boolean; onClo
                 </p>
                 {mp.categoria && <span className="inline-block px-2 py-0.5 rounded-full bg-primary-container/10 text-primary font-label text-xs">{mp.categoria.nombre}</span>}
               </div>
-              <button onClick={() => remove(mp.id)} className="p-2 text-on-surface-variant hover:text-error transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex gap-1">
+                <button onClick={() => handleEdit(mp)} className="p-2 text-info hover:bg-info/10 rounded-lg"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => remove(mp.id)} className="p-2 text-on-surface-variant hover:text-error transition-colors"><Trash2 className="w-4 h-4" /></button>
+              </div>
             </Card>
           ))
-        )}
+        }
       </div>
 
       {showForm && (
         <Card className="lg:col-span-1">
           <div className="space-y-4">
-            <h2 className="font-headline text-lg font-semibold">Nueva MP</h2>
+            <h2 className="font-headline text-lg font-semibold">{editingId ? 'Editar MP' : 'Nueva MP'}</h2>
             <Input label="Código" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} />
             <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
             <Input label="Costo unitario" type="number" value={form.costoUnitario} onChange={(e) => setForm({ ...form, costoUnitario: Number(e.target.value) })} />
             <Input label="Stock mínimo" type="number" value={form.stockMinimo} onChange={(e) => setForm({ ...form, stockMinimo: Number(e.target.value) })} />
-            <Button className="w-full" onClick={create}>Guardar</Button>
+            <Button className="w-full" onClick={handleSubmit}>{editingId ? 'Guardar cambios' : 'Crear'}</Button>
           </div>
         </Card>
       )}
@@ -145,67 +143,54 @@ function MateriasPrimasSection({ showForm, onClose }: { showForm: boolean; onClo
 function ProductosSection({ showForm, onClose }: { showForm: boolean; onClose: () => void }) {
   const [items, setItems] = useState<Producto[]>([]);
   const [form, setForm] = useState({ codigo: '', nombre: '', precioVenta: 0, stockMinimo: 0 });
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    try {
-      const res = await inventariosApi.productos.list();
-      setItems(res.data);
-    } catch {}
-    setLoading(false);
-  };
-
+  const load = async () => { try { const res = await inventariosApi.productos.list(); setItems(res.data); } catch {}; setLoading(false); };
   useEffect(() => { load(); }, []);
 
-  const create = async () => {
+  const handleEdit = (p: Producto) => { setEditingId(p.id); setForm({ codigo: p.codigo, nombre: p.nombre, precioVenta: Number(p.precioVenta), stockMinimo: Number(p.stockMinimo) }); };
+
+  const handleSubmit = async () => {
     try {
-      await inventariosApi.productos.create(form);
-      setForm({ codigo: '', nombre: '', precioVenta: 0, stockMinimo: 0 });
-      onClose();
-      await load();
+      if (editingId) await inventariosApi.productos.update(editingId, form);
+      else await inventariosApi.productos.create(form);
+      setForm({ codigo: '', nombre: '', precioVenta: 0, stockMinimo: 0 }); setEditingId(null); onClose(); await load();
     } catch {}
   };
 
-  const remove = async (id: string) => {
-    try { await inventariosApi.productos.remove(id); await load(); } catch {}
-  };
+  const remove = async (id: string) => { try { await inventariosApi.productos.remove(id); await load(); } catch {} };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-4">
-        {loading ? (
-          <Card><p className="font-body text-sm text-on-surface-variant">Cargando...</p></Card>
-        ) : items.length === 0 ? (
-          <Card><p className="font-body text-sm text-on-surface-variant">No hay productos registrados</p></Card>
-        ) : (
-          items.map((p) => (
+        {loading ? <Card><p className="font-body text-sm text-on-surface-variant">Cargando...</p></Card>
+        : items.length === 0 ? <Card><p className="font-body text-sm text-on-surface-variant">No hay productos registrados</p></Card>
+        : items.map((p) => (
             <Card key={p.id} className="flex items-center justify-between">
               <div className="space-y-1">
                 <h3 className="font-body font-medium text-on-surface">{p.nombre}</h3>
-                <p className="font-label text-xs text-on-surface-variant">
-                  {p.codigo} · Precio: ${Number(p.precioVenta).toFixed(2)} · Stock mín: {Number(p.stockMinimo)}
-                </p>
-                {p.stocks && p.stocks.length > 0 && (
-                  <p className="font-label text-xs text-success">Stock total: {p.stocks.reduce((a, s) => a + Number(s.cantidad), 0)}</p>
-                )}
+                <p className="font-label text-xs text-on-surface-variant">{p.codigo} · Precio: ${Number(p.precioVenta).toFixed(2)} · Stock mín: {Number(p.stockMinimo)}</p>
+                {p.stocks && p.stocks.length > 0 && <p className="font-label text-xs text-success">Stock total: {p.stocks.reduce((a, s) => a + Number(s.cantidad), 0)}</p>}
               </div>
-              <button onClick={() => remove(p.id)} className="p-2 text-on-surface-variant hover:text-error transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
+              <div className="flex gap-1">
+                <button onClick={() => handleEdit(p)} className="p-2 text-info hover:bg-info/10 rounded-lg"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => remove(p.id)} className="p-2 text-on-surface-variant hover:text-error transition-colors"><Trash2 className="w-4 h-4" /></button>
+              </div>
             </Card>
           ))
-        )}
+        }
       </div>
 
       {showForm && (
         <Card className="lg:col-span-1">
           <div className="space-y-4">
-            <h2 className="font-headline text-lg font-semibold">Nuevo Producto</h2>
+            <h2 className="font-headline text-lg font-semibold">{editingId ? 'Editar Producto' : 'Nuevo Producto'}</h2>
             <Input label="Código" value={form.codigo} onChange={(e) => setForm({ ...form, codigo: e.target.value })} />
             <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
             <Input label="Precio venta" type="number" value={form.precioVenta} onChange={(e) => setForm({ ...form, precioVenta: Number(e.target.value) })} />
             <Input label="Stock mínimo" type="number" value={form.stockMinimo} onChange={(e) => setForm({ ...form, stockMinimo: Number(e.target.value) })} />
-            <Button className="w-full" onClick={create}>Guardar</Button>
+            <Button className="w-full" onClick={handleSubmit}>{editingId ? 'Guardar cambios' : 'Crear'}</Button>
           </div>
         </Card>
       )}
@@ -216,53 +201,51 @@ function ProductosSection({ showForm, onClose }: { showForm: boolean; onClose: (
 function AlmacenesSection({ showForm, onClose }: { showForm: boolean; onClose: () => void }) {
   const [items, setItems] = useState<Almacen[]>([]);
   const [form, setForm] = useState({ nombre: '', ubicacion: '' });
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const load = async () => {
-    try {
-      const res = await inventariosApi.almacenes.list();
-      setItems(res.data);
-    } catch {}
-    setLoading(false);
-  };
-
+  const load = async () => { try { const res = await inventariosApi.almacenes.list(); setItems(res.data); } catch {}; setLoading(false); };
   useEffect(() => { load(); }, []);
 
-  const create = async () => {
+  const handleEdit = (a: Almacen) => { setEditingId(a.id); setForm({ nombre: a.nombre, ubicacion: a.ubicacion ?? '' }); };
+
+  const handleSubmit = async () => {
     try {
-      await inventariosApi.almacenes.create(form);
-      setForm({ nombre: '', ubicacion: '' });
-      onClose();
-      await load();
+      if (editingId) await inventariosApi.almacenes.update(editingId, form);
+      else await inventariosApi.almacenes.create(form);
+      setForm({ nombre: '', ubicacion: '' }); setEditingId(null); onClose(); await load();
     } catch {}
   };
+
+  const remove = async (id: string) => { try { await inventariosApi.almacenes.remove(id); await load(); } catch {} };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <div className="lg:col-span-2 space-y-4">
-        {loading ? (
-          <Card><p className="font-body text-sm text-on-surface-variant">Cargando...</p></Card>
-        ) : items.length === 0 ? (
-          <Card><p className="font-body text-sm text-on-surface-variant">No hay almacenes registrados</p></Card>
-        ) : (
-          items.map((a) => (
+        {loading ? <Card><p className="font-body text-sm text-on-surface-variant">Cargando...</p></Card>
+        : items.length === 0 ? <Card><p className="font-body text-sm text-on-surface-variant">No hay almacenes registrados</p></Card>
+        : items.map((a) => (
             <Card key={a.id} className="flex items-center justify-between">
               <div className="space-y-1">
                 <h3 className="font-body font-medium text-on-surface">{a.nombre}</h3>
                 <p className="font-label text-xs text-on-surface-variant">{a.ubicacion || 'Sin ubicación'} · {a._count?.stocks ?? 0} items</p>
               </div>
+              <div className="flex gap-1">
+                <button onClick={() => handleEdit(a)} className="p-2 text-info hover:bg-info/10 rounded-lg"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => remove(a.id)} className="p-2 text-on-surface-variant hover:text-error transition-colors"><Trash2 className="w-4 h-4" /></button>
+              </div>
             </Card>
           ))
-        )}
+        }
       </div>
 
       {showForm && (
         <Card className="lg:col-span-1">
           <div className="space-y-4">
-            <h2 className="font-headline text-lg font-semibold">Nuevo Almacén</h2>
+            <h2 className="font-headline text-lg font-semibold">{editingId ? 'Editar Almacén' : 'Nuevo Almacén'}</h2>
             <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
             <Input label="Ubicación" value={form.ubicacion} onChange={(e) => setForm({ ...form, ubicacion: e.target.value })} />
-            <Button className="w-full" onClick={create}>Guardar</Button>
+            <Button className="w-full" onClick={handleSubmit}>{editingId ? 'Guardar cambios' : 'Crear'}</Button>
           </div>
         </Card>
       )}

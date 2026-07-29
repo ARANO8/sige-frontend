@@ -62,16 +62,20 @@ export const inventariosApi = {
   materiasPrimas: {
     list: () => api.get<MateriaPrima[]>('/materia-prima'),
     create: (d: Partial<MateriaPrima>) => api.post<MateriaPrima>('/materia-prima', d),
+    update: (id: string, d: Partial<MateriaPrima>) => api.patch<MateriaPrima>(`/materia-prima/${id}`, d),
     remove: (id: string) => api.delete(`/materia-prima/${id}`),
   },
   productos: {
     list: () => api.get<Producto[]>('/producto'),
     create: (d: Partial<Producto>) => api.post<Producto>('/producto', d),
+    update: (id: string, d: Partial<Producto>) => api.patch<Producto>(`/producto/${id}`, d),
     remove: (id: string) => api.delete(`/producto/${id}`),
   },
   almacenes: {
     list: () => api.get<Almacen[]>('/almacen'),
     create: (d: Partial<Almacen>) => api.post<Almacen>('/almacen', d),
+    update: (id: string, d: Partial<Almacen>) => api.patch<Almacen>(`/almacen/${id}`, d),
+    remove: (id: string) => api.delete(`/almacen/${id}`),
   },
   movimientos: {
     list: (page = 1) => api.get<{ data: Movimiento[]; total: number }>(`/movimiento-inventario?page=${page}&limit=50`),
